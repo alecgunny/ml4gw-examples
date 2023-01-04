@@ -1,0 +1,6 @@
+name: ml4gw-examples
+dependencies:
+  - python=3.10
+  - gwpy
+  - python-nds2-client
+  - bilby

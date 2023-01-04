@@ -1,0 +1,44 @@
+[tool.poetry]
+name = "ml4gw-examples"
+description = "Example notebooks for ML4GW ecosystem"
+authors = ["Alec Gunny <alecg@mit.edu>"]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+rich = "^13.0"
+bokeh = "^2.4"
+jupyter = "^1.0"
+
+torch = {version = "^1.12", source = "torch"}
+torchmetrics = "^0.11"
+ml4gw = {git = "https://github.com/ml4gw/ml4gw.git", branch = "main"}
+
+[tool.poetry.group.dev.dependencies]
+pre-commit = "^2.20"
+pytest = "^6.2"
+
+[[tool.poetry.source]]
+name = "torch"
+url = "https://download.pytorch.org/whl/cu116"
+secondary = true
+default = false
+
+
+[tool.black]
+line-length = 79
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+  | \.tox
+  | _build
+  | dist
+  | docs
+)/
+'''
+
+
+[tool.isort]
+known_first_party = ["ml4gw", "example"]
+multi_line_output = 3
+include_trailing_comma = true
