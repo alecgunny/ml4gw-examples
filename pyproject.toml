@@ -1,10 +1,11 @@
 [tool.poetry]
 name = "ml4gw-examples"
+version = "0.0.1"
 description = "Example notebooks for ML4GW ecosystem"
 authors = ["Alec Gunny <alecg@mit.edu>"]
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = ">=3.9,<3.11"
 rich = "^13.0"
 bokeh = "^2.4"
 jupyter = "^1.0"
