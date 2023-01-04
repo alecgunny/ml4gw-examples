@@ -6,3 +6,4 @@ dependencies:
   - gwpy
   - python-nds2-client
   - bilby
+  - lalsuite

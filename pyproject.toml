@@ -10,6 +10,11 @@ rich = "^13.0"
 bokeh = "^2.4"
 jupyter = "^1.0"
 
+# due to incompatability with astropy
+# should be fixed once this PR gets
+# into a release https://github.com/astropy/astropy/pull/14232
+scipy = "<1.10"
+
 torch = {version = "^1.12", source = "torch"}
 torchmetrics = "^0.11"
 ml4gw = {git = "https://github.com/ml4gw/ml4gw.git", branch = "main"}
