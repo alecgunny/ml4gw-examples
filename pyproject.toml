@@ -6,7 +6,7 @@ authors = ["Alec Gunny <alecg@mit.edu>"]
 
 [tool.poetry.dependencies]
 python = ">=3.9,<3.11"
-rich = "^13.0"
+rich = {version = "<12.6.0", extras = ["jupyter"]}
 bokeh = "^2.4"
 jupyter = "^1.0"
 
