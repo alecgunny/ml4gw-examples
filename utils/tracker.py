@@ -8,20 +8,26 @@ import torch
 from rich.console import Console
 from rich.layout import Layout
 from rich.live import Live
-from rich.progress import Progress
+from rich.progress import (
+    Progress, MofNCompleteColumn, ProgressColumn, TimeRemainingColumn, Text
+)
 from rich.table import Table
 
 console = Console()
 T = TypeVar("T")
 
 
+class ThroughputColumn(ProgressColumn):
+    def render(self, task):
+        N = task.completed * task.fields["batch_size"]
+        throughput = N / task.elapsed
+        return Text(f"{throughput:0.1f} samples / s")
+
 class Run:
-    def __init__(
-        self, model: torch.nn.Module, output_directory: Path, max_epochs: int
-    ) -> None:
+    def __init__(self, model: torch.nn.Module, output_directory: Path) -> None:
         self.output_directory = output_directory
         self.model = model
-        self.max_epochs = max_epochs
+        self.max_epochs = None
 
         self.checkpoint_dir.mkdir(parents=True, exist_ok=True)
 
@@ -31,7 +37,12 @@ class Run:
             Layout(name="table", ratio=1),
         )
 
-        self.prog = Progress()
+        self.prog = Progress(
+            *Progress.get_default_columns()[:2],
+            MofNCompleteColumn(),
+            ThroughputColumn(),
+            TimeRemainingColumn()
+        )
         self.task_id = self.prog.add_task("Working on it", total=100)
 
         self.table = Table()
@@ -76,8 +87,12 @@ class Run:
             fname = self.checkpoint_dir / f"epoch_{str_epoch}.pt"
             torch.save(self.model.state_dict(), fname)
 
+        epoch_row = f"Epoch {epoch}"
+        if self.max_epochs is not None:
+            epoch_row += f"/{self.max_epochs}"
+
         self.table.add_row(
-            f"Epoch {epoch}/{self.max_epochs}",
+            epoch_row,
             f"{train_color}{train_loss:0.3e}",
             f"{valid_color}{valid_loss:0.3e}",
         )
@@ -89,21 +104,13 @@ class Run:
         with open(fname, "wb") as f:
             pickle.dump(self.history, f)
 
-    def train(self):
-        with Live(self.layout, refresh_per_second=0.5):
-            for i in range(self.max_epochs):
+    def run(self, max_epochs: int):
+        self.max_epochs = max_epochs
+        with Live(self.layout, refresh_per_second=10):
+            for i in range(max_epochs):
                 epoch = Epoch(self, i)
                 yield epoch
                 self.update(**epoch.metrics)
-
-
-def _epoch_run(it: Iterable[T]) -> Generator[T, float, float]:
-    value, i = 0, 0
-    for X in it:
-        loss = yield X
-        value += loss
-        i += 1
-    return value / i
 
 
 @dataclass
@@ -113,21 +120,32 @@ class Epoch:
 
     def __post_init__(self):
         self.metrics = {}
-        self._gen = None
+        self._tracking: Optional[float] = None
 
     def update(self, loss: float):
-        if self._gen is None:
-            raise ValueError("No generator to update")
-        self._gen.send(loss)
+        if self._tracking is None:
+            raise ValueError("No metric being tracked!")
+        self._tracking += loss
 
     def track(
         self, it: Iterable[T], metric: str, msg: Optional[str] = None
-    ) -> Generator[T, float, None]:
+    ) -> Generator[T, None, None]:
+        N = len(it)
+        it = iter(it)
+        X = next(it)
         msg = msg or f"Computing {metric.replace('_', ' ').title()}"
-        self.run.prog.message = msg
-        self.run.prog.start_time = time.time()
+        self.run.prog.reset(self.run.task_id, total=N, batch_size=len(X))
+        self.run.prog.update(self.run.task_id, description=msg)
 
-        self._gen = _epoch_run(it)
-        loss = yield from self._gen
-        self.metrics[metric] = loss
-        self._gen = None
+        self._tracking = 0
+        while True:
+            yield X
+
+            self.run.prog.update(self.run.task_id, advance=1)
+            try:
+                X = next(it)
+            except StopIteration:
+                break
+ 
+        self.metrics[metric] = self._tracking / len(it)
+        self._tracking = None
