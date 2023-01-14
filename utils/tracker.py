@@ -1,5 +1,4 @@
 import pickle
-import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Generator, Iterable, Optional, TypeVar
@@ -9,7 +8,11 @@ from rich.console import Console
 from rich.layout import Layout
 from rich.live import Live
 from rich.progress import (
-    Progress, MofNCompleteColumn, ProgressColumn, TimeRemainingColumn, Text
+    MofNCompleteColumn,
+    Progress,
+    ProgressColumn,
+    Text,
+    TimeRemainingColumn,
 )
 from rich.table import Table
 
@@ -22,6 +25,7 @@ class ThroughputColumn(ProgressColumn):
         N = task.completed * task.fields["batch_size"]
         throughput = N / task.elapsed
         return Text(f"{throughput:0.1f} samples / s")
+
 
 class Run:
     def __init__(self, model: torch.nn.Module, output_directory: Path) -> None:
@@ -41,7 +45,7 @@ class Run:
             *Progress.get_default_columns()[:2],
             MofNCompleteColumn(),
             ThroughputColumn(),
-            TimeRemainingColumn()
+            TimeRemainingColumn(),
         )
         self.task_id = self.prog.add_task("Working on it", total=100)
 
@@ -146,6 +150,6 @@ class Epoch:
                 X = next(it)
             except StopIteration:
                 break
- 
+
         self.metrics[metric] = self._tracking / len(it)
         self._tracking = None
