@@ -1053,7 +1053,7 @@ torchtyping = "^0.1"
 type = "git"
 url = "https://github.com/ml4gw/ml4gw.git"
 reference = "main"
-resolved_reference = "fd6d9fbaee0717ef5ff841253a9ba6a2ce1ef3ef"
+resolved_reference = "e0b94e7a4c18c254b41b02a40ac8a81bd141a358"
 
 [[package]]
 name = "nbclassic"
